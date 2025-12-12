@@ -1,0 +1,19 @@
+{
+  "name": "decert.me",
+  "version": "1.0.0",
+  "description": "POW SHA256 Demo - DeCert.me Learning",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "pow": "ts-node module1-blockchain-basics/practice1-pow/pow_sha256.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

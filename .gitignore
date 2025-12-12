@@ -1,0 +1,47 @@
+# 依赖项 - 不需要提交，其他人可以通过 npm install 安装
+node_modules/
+
+# 编译输出目录
+dist/
+build/
+out/
+
+# 日志文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 运行时数据
+pids/
+*.pid
+*.seed
+
+# 编辑器/IDE 配置
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 环境变量文件（如果有敏感信息）
+.env
+.env.local
+.env.*.local
+
+# TypeScript 增量编译缓存
+*.tsbuildinfo
+
+# 可选的 npm 缓存目录
+.npm
+
+# 可选的 eslint 缓存
+.eslintcache
+
+# 锁文件 (可选 - 如果是练习项目可以忽略)
+# package-lock.json
+# yarn.lock
