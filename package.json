@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "pow": "ts-node module1-blockchain-basics/practice1-pow/pow_sha256.ts",
-    "rsa": "ts-node module1-blockchain-basics/practice1-pow/rsa_signature.ts",
+    "block-sim": "ts-node --esm module1-blockchain-basics/practice2-block-simulation/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
