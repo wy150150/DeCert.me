@@ -5,7 +5,7 @@ pragma solidity ^0.8.20;
  * 示例包含三个合约：
  * 1. MyToken (ERC777，用作可回调的 ERC20 扩展 Token)
  * 2. MyNFT (ERC721)
- * 3. NFTMarket_1 (NFT 市场，支持 list / buyNFT / tokensReceived)
+ * 3. NFTMarket (NFT 市场，支持 list / buyNFT / tokensReceived)
  *
  * 重点：
  * - 使用 ERC777 的 tokensReceived 回调完成“转 Token 即买 NFT”
@@ -39,7 +39,7 @@ contract MyNFT is ERC721 {
 }
 
 /* ---------------- NFT Market ---------------- */
-contract NFTMarket_1 is IERC777Recipient {
+contract NFTMarket is IERC777Recipient {
     IERC1820Registry private constant _ERC1820 =
         IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
 
