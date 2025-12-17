@@ -10,10 +10,15 @@ contract MyNFT is ERC721URIStorage, Ownable {
 
     constructor() ERC721("WesleyNFT", "WNFT") Ownable(msg.sender) {}
 
-    function mint(string memory tokenURI) public onlyOwner returns (uint256) {
-        uint256 tokenId = _nextTokenId++;
-        _mint(msg.sender, tokenId);
-        _setTokenURI(tokenId, tokenURI);
-        return tokenId;
+    function mintNFT(address recipient, string memory tokenURI)
+        public
+        onlyOwner
+        returns (uint256)
+    {
+        uint256 newItemId = _nextTokenId++;
+        _mint(recipient, newItemId);
+        _setTokenURI(newItemId, tokenURI);
+
+        return newItemId;
     }
 }
