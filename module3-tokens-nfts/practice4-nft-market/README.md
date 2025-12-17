@@ -1,114 +1,58 @@
-# NFT Market 实战操作指南
+# NFT Market 实战 (ERC777 回调版)
 
-本指南将教你如何使用 IPFS 存储图片与元数据，如何部署 NFT 合约并铸造 NFT，以及如何部署 Market 合约进行挂单交易。
+本版本 NFT Market 引入了 ERC777 代币作为支付货币，利用其 `tokensReceived` 钩子函数实现了“转账即购买”的原子化交易体验。
 
-## 前置准备
+## 文件说明
+- `NFTMarket.sol`: 包含 `MyToken` (ERC777)、`MyNFT` (ERC721) 和 `NFTMarket` (交易市场) 三个合约。
 
-### 1. 安装依赖
-由于你的合约代码使用了 OpenZeppelin 4.x 版本的路径（例如 `security/ReentrancyGuard.sol`），请确保安装 4.x 版本：
+## 功能特性
+1. **ERC777 支付**: 使用 ERC777 代币进行交易，支持回调机制。
+2. **转账即购买**: 用户通过直接向 Market 合约发送 Token 并附带 `data` 参数，即可一步完成购买 NFT。
+3. **托管式上架**: 卖家上架时将 NFT 转入 Market 合约托管。
 
-```bash
-npm install @openzeppelin/contracts@4.9.6
-```
+## 部署与交互流程 (Remix)
 
-### 2. 准备 MetaMask 钱包与测试币
-- 确保你的 MetaMask 钱包连接到 **Sepolia 测试网**。
-- 前往 [Sepolia Faucet](https://sepoliafaucet.com/) 领取测试 ETH。
+### 1. 部署 MyToken (ERC777)
+   - 部署 `MyToken` 合约。
+   - 构造参数 `initialSupply`: 输入初始供应量（注意精度，例如 10000000000000000000000 代表 10000 个）。
+   - 记录 `MyToken` 地址。
 
-## 步骤一：上传图片和元数据到 IPFS
+### 2. 部署 MyNFT (ERC721)
+   - 部署 `MyNFT` 合约。
+   - 记录 `MyNFT` 地址。
 
-我们需要将 NFT 的图片和描述信息存储在去中心化网络 IPFS 上。推荐使用 [Pinata](https://www.pinata.cloud/)。
+### 3. 部署 NFTMarket
+   - 部署 `NFTMarket` 合约。
+   - 构造参数 `_token`: 填入 `MyToken` 的合约地址。
+   - **注意**: 部署成功后，确保 `ERC1820Registry` 在当前网络已部署（测试网通常已有，本地开发网可能需手动部署）。
 
-1. **上传图片**:
-   - 注册并登录 Pinata。
-   - 点击 "Upload" -> "File"，选择你的 NFT 图片（例如 `my_nft_image.png`）。
-   - 上传成功后，复制 **CID** (例如 `QmXyZ...`).
-   - 图片 URI 为: `ipfs://QmXyZ...`
+### 4. 铸造 NFT 与 Token
+   - 调用 `MyNFT.mint(UserA_Address)` 给自己铸造一个 NFT (tokenId 0)。
+   - (如果在部署 MyToken 时未给自己铸币，需调用 mint 或 transfer 获取一些 Token)。
 
-2. **创建元数据 (Metadata JSON)**:
-   - 在本地创建一个 JSON 文件 `metadata.json`，内容如下（替换为你刚才的图片 URI）：
-     ```json
-     {
-       "name": "My Unique NFT",
-       "description": "This is an NFT created for the DeCert.me practice.",
-       "image": "ipfs://YOUR_IMAGE_CID_HERE"
-     }
-     ```
+### 5. 上架 (List) - User A
+   - 所谓“托管式上架”，**需先授权**:
+     - 调用 `MyNFT.approve(Market_Address, 0)`。
+   - 调用 `NFTMarket.list(MyNFT_Address, 0, Price)`。
+     - `Price`: 设置价格（例如 1000000000000000000）。
+   - 成功后，NFT 0 被转移到 Market 合约中。
 
-3. **上传元数据**:
-   - 再次在 Pinata 点击 "Upload" -> "File"，上传 `metadata.json`。
-   - 复制新的 **CID** (例如 `QmRef...`).
-   - **最终 Token URI**: `ipfs://QmRef...` (这个字符串将用于铸造 NFT)。
+### 6. 购买 (Buy) - User B
 
-## 步骤二：部署合约 (使用 Remix)
+   **方式一：普通购买 (approve + buyNFT)**
+   - 切换到 User B。
+   - 确保 User B 有足够的 `MyToken`。
+   - 调用 `MyToken.approve(Market_Address, Price)`。
+   - 调用 `NFTMarket.buyNFT(MyNFT_Address, 0)`。
 
-对于初学者，**Remix IDE** 是最直观的部署工具。
+   **方式二：转账即购买 (ERC777 send)**
+   - 切换到 User B。
+   - 构造 `data` 参数:
+     - 可以在 Remix Scripts 或其他工具中生成 `abi.encode(MyNFT_Address, 0)` 的 bytes 数据。
+     - 或者手算: NFT地址 (32字节补零) + tokenId (32字节补零)。
+   - 调用 `MyToken.send(Market_Address, Price, data)`。
+   - 交易成功后，Market 收到 Token 回调 `tokensReceived`，自动解析 `data`，完成交易并将 NFT 发给 User B。
 
-1. 打开 [Remix IDE](https://remix.ethereum.org/)。
-2. 在 `contracts` 文件夹下新建 `MyNFT.sol` 和 `NFTMarket.sol`，并将你的代码复制进去。
-3. **编译**:
-   - 点击左侧 "Solidity Compiler" 图标。
-   - Compiler 版本选择 `0.8.20`。
-   - 点击 "Compile MyNFT.sol" 和 "Compile NFTMarket.sol"。
-4. **部署 MyNFT**:
-   - 点击左侧 "Deploy & Run Transactions" 图标。
-   - Environment 选择 "**Injected Provider - MetaMask**" (确保 MetaMask 连在 Sepolia)。
-   - Contract 选择 `MyNFT`。
-   - 点击 "Deploy" 并确认交易。
-   - **记录 MyNFT 合约地址** (例如 `0x123...`).
-
-5. **部署 NFTMarket**:
-   - Contract 选择 `NFTMarket`。
-   - 点击 "Deploy" 并确认交易。
-   - **记录 NFTMarket 合约地址** (例如 `0xABC...`).
-
-## 步骤三：铸造 (Mint) NFT
-
-1. 在 Remix 的 "Deployed Contracts" 区域找到 `MyNFT`。
-2. 展开 `mint` 函数。
-3. 参数填写：
-   - `to`: 你的钱包地址。
-   - `uri`: 步骤一中获得的 Metadata URI (例如 `ipfs://QmRef...`)。
-4. 点击 "transact" 并确认。
-5. 等待交易确认。此时你已拥有 tokenId 为 `0` 的 NFT（因为代码是从 0 开始计数的）。
-
-## 步骤四：查看 OpenSea
-
-1. 前往 [OpenSea Testnet](https://testnets.opensea.io/)。
-2. 搜索你的 `MyNFT` 合约地址，或者连接钱包查看 "My Profile" -> "Collected"。
-3. 你应该能看到你刚才铸造的图片显示出来了！
-
-## 步骤五：在 Market 上架 (List)
-
-要将 NFT 上架到 Market，需要两步：**授权** 和 **上架**。
-
-1. **授权 (Approve)**:
-   - 在 Remix 找到 `MyNFT` 合约。
-   - 找到 `approve` 函数。
-   - `to`: 填入 **NFTMarket 合约地址**。
-   - `tokenId`: `0` (你刚才铸造的 ID)。
-   - 点击 "transact"。
-
-2. **上架 (List)**:
-   - 在 Remix 找到 `NFTMarket` 合约。
-   - 找到 `list` 函数。
-   - `nft`: `MyNFT` 合约地址。
-   - `tokenId`: `0`。
-   - `price`: 设置价格 (单位是 wei)。例如 0.001 ETH = `1000000000000000` (15个0)。
-   - 点击 "transact"。
-
-## 步骤六：购买 (Buy)
-
-为了测试购买，你可以切换到 MetaMask 的另一个账户（或者让朋友帮忙）。
-
-1. 切换 MetaMask 账户。
-2. 在 Remix `NFTMarket` 合约中找到 `buy` 函数。
-3. `nft`: `MyNFT` 合约地址。
-4. `tokenId`: `0`。
-5. **重要**: 在 "Value" 输入框（Remix 左上角）填入 `0.001` 并选择 `Ether` (要与上架价格一致)。
-6. 点击 "transact"。
-7. 交易成功后，NFT 所有权将转移给购买者，卖家将收到 ETH。
-
-## 常用链接
-- [Sepolia Scan](https://sepolia.etherscan.io/) (查询交易)
-- [OpenSea Testnet](https://testnets.opensea.io/) (查看 NFT)
+## 常用工具
+- [Sepolia Faucet](https://sepoliafaucet.com/)
+- [ERC1820Registry Address](https://etherscan.io/address/0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24) (主网/测试网通用)
