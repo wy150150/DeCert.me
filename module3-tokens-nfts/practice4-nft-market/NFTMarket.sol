@@ -51,10 +51,10 @@ contract ExtendedERC20 is ERC20 {
 }
 
 /**
- * @title NFTMarket_1
+ * @title NFTMarket
  * @dev 使用自定义的 ERC20 扩展 Token 进行买卖
  */
-contract NFTMarket_1 is ReentrancyGuard, ITokenReceiver {
+contract NFTMarket is ReentrancyGuard, ITokenReceiver {
     struct Listing {
         address seller;
         uint256 price;
